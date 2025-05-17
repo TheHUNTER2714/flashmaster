@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlashMaster - Interactive Educational Flashcards</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            overflow-x: hidden;
+            background-color: #f9fafb;
+        }
+
+        /* Animated Background */
+        .animated-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Animated Shapes */
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 8s infinite ease-in-out;
+        }
+
+        .shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 100px;
+            height: 100px;
+            top: 20%;
+            right: 15%;
+            animation-delay: 1s;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+
+        .shape:nth-child(3) {
+            width: 120px;
+            height: 120px;
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 2s;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+        }
+
+        .shape:nth-child(4) {
+            width: 60px;
+            height: 60px;
+            bottom: 15%;
+            right: 15%;
+            animation-delay: 3s;
+        }
+
+        .shape-morph {
+            animation: morph 8s infinite alternate;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(0) rotate(360deg);
+            }
+        }
+
+        @keyframes morph {
+            0% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+            25% {
+                border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+            }
+            50% {
+                border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+            }
+            75% {
+                border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+            }
+            100% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+        }
+
+        /* Card Flip Animation */
+        .card-container {
+            perspective: 1000px;
+        }
+
+        .flashcard {
+            position: relative;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            height: 320px;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Button Animations */
+        .pulse-on-hover {
+            transition: all 0.3s ease;
+        }
+
+        .pulse-on-hover:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Progress Bar Animation */
+        .progress-bar {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        .progress-value {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #4ade80 0%, #22d3ee 100%);
+            transition: width 0.5s ease;
+        }
+
+        /* Section Transitions */
+        .section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Material like button effect */
+        .ripple-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ripple-btn:before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 70%);
+            transform: scale(0);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .ripple-btn:active:before {
+            transform: scale(2);
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* Deck Card Hover Effect */
+        .deck-card {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .deck-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background-color: #4ade80;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Dropdown Animation */
+        .dropdown {
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+        }
+
+        .dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toast-message">Success!</span>
+    </div>
+
+    <!-- Landing Page -->
+    <section id="landing-page" class="section active min-h-screen flex flex-col items-center justify-center animated-bg">
+        <!-- Animated Shapes -->
+        <div class="shape shape-morph"></div>
+        <div class="shape shape-morph"></div>
+        <div class="shape shape-morph"></div>
+        <div class="shape shape-morph"></div>
+
+        <div class="text-center p-6 z-10">
+            <div class="animate-bounce mb-4">
+                <i class="fas fa-brain text-white text-6xl"></i>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold text-white mb-4">FlashMaster</h1>
+            <p class="text-xl md:text-2xl text-white mb-8">Your ultimate flashcard learning tool</p>
+            
+            <div class="mt-8">
+                <button id="get-started-btn" class="pulse-on-hover ripple-btn bg-white text-indigo-600 font-bold py-4 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105">
+                    Get Started
+                </button>
+            </div>
+            
+            <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-6 text-white transition-all duration-300 hover:bg-opacity-30">
+                    <i class="fas fa-magic text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Beautiful Animations</h3>
+                    <p>Engaging card flip and visual effects for better learning experience</p>
+                </div>
+                
+                <div class="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-6 text-white transition-all duration-300 hover:bg-opacity-30">
+                    <i class="fas fa-chart-line text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Progress Tracking</h3>
+                    <p>Monitor your learning journey with detailed progress metrics</p>
+                </div>
+                
+                <div class="bg-white bg-opacity-20 backdrop-filter backdrop-blur-lg rounded-xl p-6 text-white transition-all duration-300 hover:bg-opacity-30">
+                    <i class="fas fa-plus-circle text-3xl mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">Create Custom Decks</h3>
+                    <p>Build your own deck of flashcards for personalized learning</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard/Deck View -->
+    <section id="dashboard" class="section hidden min-h-screen p-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center">
+                    <i class="fas fa-brain text-indigo-600 text-4xl mr-3"></i>
+                    <h1 class="text-3xl font-bold text-gray-800">FlashMaster</h1>
+                </div>
+                <button id="create-deck-btn" class="bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center shadow-md hover:bg-indigo-700 transition duration-200">
+                    <i class="fas fa-plus mr-2"></i> New Deck
+                </button>
+            </div>
+            
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Your Flashcard Decks</h2>
+                <div class="relative">
+                    <input type="text" id="search-decks" placeholder="Search your decks..." class="w-full p-3 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div id="decks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Deck cards will be added here dynamically -->
+                <div class="deck-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
+                    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 h-24 flex items-center justify-center">
+                        <i class="fas fa-graduation-cap text-white text-4xl"></i>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-semibold text-lg text-gray-800">Mathematics</h3>
+                        <div class="flex items-center mt-2 text-sm text-gray-600">
+                            <span><i class="fas fa-layer-group mr-1"></i> 25 cards</span>
+                            <span class="mx-3">|</span>
+                            <span><i class="fas fa-clock mr-1"></i> Last studied 2d ago</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-sm text-gray-600 mb-1 flex justify-between">
+                                <span>Progress</span>
+                                <span>68%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 h-2 w-full">
+                                <div class="progress-value" style="width: 68%"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button class="study-deck-btn flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm hover:bg-indigo-700 transition">Study</button>
+                            <button class="edit-deck-btn w-10 bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="deck-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
+                    <div class="bg-gradient-to-r from-blue-500 to-teal-400 h-24 flex items-center justify-center">
+                        <i class="fas fa-flask text-white text-4xl"></i>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-semibold text-lg text-gray-800">Chemistry</h3>
+                        <div class="flex items-center mt-2 text-sm text-gray-600">
+                            <span><i class="fas fa-layer-group mr-1"></i> 18 cards</span>
+                            <span class="mx-3">|</span>
+                            <span><i class="fas fa-clock mr-1"></i> Last studied 1d ago</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-sm text-gray-600 mb-1 flex justify-between">
+                                <span>Progress</span>
+                                <span>42%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 h-2 w-full">
+                                <div class="progress-value" style="width: 42%"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button class="study-deck-btn flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm hover:bg-indigo-700 transition">Study</button>
+                            <button class="edit-deck-btn w-10 bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="deck-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300">
+                    <div class="bg-gradient-to-r from-pink-500 to-red-500 h-24 flex items-center justify-center">
+                        <i class="fas fa-language text-white text-4xl"></i>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-semibold text-lg text-gray-800">Spanish</h3>
+                        <div class="flex items-center mt-2 text-sm text-gray-600">
+                            <span><i class="fas fa-layer-group mr-1"></i> 30 cards</span>
+                            <span class="mx-3">|</span>
+                            <span><i class="fas fa-clock mr-1"></i> Last studied today</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-sm text-gray-600 mb-1 flex justify-between">
+                                <span>Progress</span>
+                                <span>85%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 h-2 w-full">
+                                <div class="progress-value" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button class="study-deck-btn flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm hover:bg-indigo-700 transition">Study</button>
+                            <button class="edit-deck-btn w-10 bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create/Edit Deck Modal -->
+    <div id="deck-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 transform transition-all duration-300 scale-100">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="deck-modal-title" class="text-xl font-bold text-gray-800">Create New Deck</h2>
+                <button id="close-deck-modal" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="deck-form" class="space-y-4">
+                <div>
+                    <label for="deck-name" class="block text-sm font-medium text-gray-700 mb-1">Deck Name</label>
+                    <input type="text" id="deck-name" name="deck-name" placeholder="e.g., Biology 101" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label for="deck-description" class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                    <textarea id="deck-description" name="deck-description" rows="3" placeholder="Brief description about this deck" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div>
+                    <label for="deck-color" class="block text-sm font-medium text-gray-700 mb-1">Deck Color</label>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="color-option w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-600 cursor-pointer border-2 border-transparent hover:border-gray-400" data-color="purple-indigo"></div>
+                        <div class="color-option w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-teal-400 cursor-pointer border-2 border-transparent hover:border-gray-400" data-color="blue-teal"></div>
+                        <div class="color-option w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-red-500 cursor-pointer border-2 border-transparent hover:border-gray-400" data-color="pink-red"></div>
+                        <div class="color-option w-8 h-8 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 cursor-pointer border-2 border-transparent hover:border-gray-400" data-color="yellow-orange"></div>
+                        <div class="color-option w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-teal-500 cursor-pointer border-2 border-transparent hover:border-gray-400" data-color="green-teal"></div>
+                        <input type="hidden" id="deck-color" name="deck-color" value="purple-indigo">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="deck-icon" class="block text-sm font-medium text-gray-700 mb-1">Deck Icon</label>
+                    <div class="flex flex-wrap gap-3">
+                        <div class="icon-option w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-gray-400" data-icon="fa-graduation-cap">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="icon-option w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-gray-400" data-icon="fa-flask">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="icon-option w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-gray-400" data-icon="fa-language">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <div class="icon-option w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-gray-400" data-icon="fa-book">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="icon-option w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer border-2 border-transparent hover:border-gray-400" data-icon="fa-code">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <input type="hidden" id="deck-icon" name="deck-icon" value="fa-graduation-cap">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end pt-2">
+                    <button type="button" id="cancel-deck-btn" class="mr-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Cancel</button>
+                    <button type="submit" id="save-deck-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Create Deck</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Flashcard Study View -->
+    <section id="study-view" class="section hidden min-h-screen p-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <button id="back-to-decks" class="flex items-center text-indigo-600 hover:text-indigo-800 transition">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Decks
+                </button>
+                <div class="flex items-center">
+                    <button id="add-card-btn" class="bg-indigo-600 text-white py-2 px-4 rounded-lg flex items-center shadow-md hover:bg-indigo-700 transition duration-200 mr-3">
+                        <i class="fas fa-plus mr-2"></i> Add Card
+                    </button>
+                    <div class="relative">
+                        <button id="study-options-btn" class="bg-gray-100 text-gray-700 py-2 px-3 rounded-lg flex items-center hover:bg-gray-200 transition duration-200">
+                            <i class="fas fa-cog mr-2"></i> Options
+                        </button>
+                        <div id="study-options-dropdown" class="dropdown absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                            <div class="py-1">
+                                <button id="shuffle-cards" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-random mr-2"></i> Shuffle Cards
+                                </button>
+                                <button id="reset-progress" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-redo mr-2"></i> Reset Progress
+                                </button>
+                                <button id="edit-deck-btn" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <i class="fas fa-edit mr-2"></i> Edit Deck
+                                </button>
+                                <button id="delete-deck-btn" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                    <i class="fas fa-trash-alt mr-2"></i> Delete Deck
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h1 id="study-deck-title" class="text-2xl font-bold text-gray-800 mb-1">Mathematics</h1>
+                <div class="flex items-center text-sm text-gray-600">
+                    <span><i class="fas fa-layer-group mr-1"></i> <span id="cards-count">25</span> cards</span>
+                    <span class="mx-3">|</span>
+                    <span><i class="fas fa-check-circle mr-1"></i> <span id="mastered-count">17</span> mastered</span>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <div class="bg-gray-100 p-3 rounded-lg">
+                    <div class="flex justify-between text-sm text-gray-600 mb-1">
+                        <span>Overall Progress</span>
+                        <span id="progress-percentage">68%</span>
+                    </div>
+                    <div class="progress-bar bg-white h-3 w-full rounded-full">
+                        <div id="progress-bar-value" class="progress-value rounded-full" style="width: 68%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center mb-8">
+                <div class="card-container w-full max-w-2xl">
+                    <div id="current-flashcard" class="flashcard relative">
+                        <div class="flashcard-front bg-white p-8">
+                            <h3 class="text-lg text-gray-500 mb-2">Question</h3>
+                            <p id="card-front-content" class="text-2xl font-medium text-center">What is the Pythagorean theorem?</p>
+                            <div class="absolute bottom-4 w-full left-0 text-center text-gray-400">
+                                <p class="text-sm">Click to flip</p>
+                            </div>
+                        </div>
+                        <div class="flashcard-back bg-white p-8">
+                            <h3 class="text-lg text-gray-500 mb-2">Answer</h3>
+                            <p id="card-back-content" class="text-xl text-center">In a right triangle, the square of the length of the hypotenuse equals the sum of the squares of the lengths of the other two sides.</p>
+                            <div class="absolute bottom-4 w-full left-0 text-center text-gray-400">
+                                <p class="text-sm">Click to flip back</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <button id="dont-know-btn" class="pulse-on-hover flex-1 max-w-xs bg-red-100 text-red-600 py-3 px-6 rounded-lg font-medium border border-red-200 hover:bg-red-200 transition">
+                    <i class="far fa-times-circle mr-2"></i> Don't Know
+                </button>
+                <button id="know-btn" class="pulse-on-hover flex-1 max-w-xs bg-green-100 text-green-600 py-3 px-6 rounded-lg font-medium border border-green-200 hover:bg-green-200 transition">
+                    <i class="far fa-check-circle mr-2"></i> Know
+                </button>
+            </div>
+            
+            <div class="mt-8 flex justify-between items-center">
+                <button id="prev-card" class="text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <i class="fas fa-chevron-left mr-1"></i> Previous
+                </button>
+                <span id="card-counter" class="text-sm text-gray-600">Card 1 of 25</span>
+                <button id="next-card" class="text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Next <i class="fas fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create/Edit Flashcard Modal -->
+    <div id="card-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 transform transition-all duration-300 scale-100">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="card-modal-title" class="text-xl font-bold text-gray-800">Add New Flashcard</h2>
+                <button id="close-card-modal" class="text-gray-500 hover:text-gray-700 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="card-form" class="space-y-4">
+                <div>
+                    <label for="card-front" class="block text-sm font-medium text-gray-700 mb-1">Question (Front)</label>
+                    <textarea id="card-front" name="card-front" rows="3" placeholder="Enter your question here" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div>
+                    <label for="card-back" class="block text-sm font-medium text-gray-700 mb-1">Answer (Back)</label>
+                    <textarea id="card-back" name="card-back" rows="4" placeholder="Enter the answer here" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="flex justify-end pt-2">
+                    <button type="button" id="cancel-card-btn" class="mr-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">Cancel</button>
+                    <button type="submit" id="save-card-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add Card</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 transform transition-all duration-300 scale-100">
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-red-100 text-red-600 mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <h3 id="confirm-title" class="text-xl font-medium text-gray-900 mb-2">Delete Deck</h3>
+                <p id="confirm-message" class="text-sm text-gray-500">Are you sure you want to delete this deck? All cards will be permanently removed. This action cannot be undone.</p>
+            </div>
+            
+            <div class="flex justify-center space-x-3 mt-4">
+                <button id="confirm-cancel" class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Cancel
+                </button>
+                <button id="confirm-action" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Complete Study Session Modal -->
+    <div id="complete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 transform transition-all duration-300 scale-100">
+            <div class="text-center mb-4">
+                <div class="inline-flex items-center justify-center h-24 w-24 rounded-full bg-green-100 text-green-600 mb-4">
+                    <i class="fas fa-trophy text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Session Complete!</h3>
+                <p class="text-gray-600">Great job! You've completed this study session.</p>
+                
+                <div class="mt-6 mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-600">Cards Reviewed</span>
+                        <span id="cards-reviewed" class="text-sm font-bold text-gray-800">25</span>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-600">Cards Mastered</span>
+                        <span id="cards-mastered" class="text-sm font-bold text-green-600">17</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-600">Cards to Review</span>
+                        <span id="cards-to-review" class="text-sm font-bold text-orange-500">8</span>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex space-x-3">
+                    <button id="review-again" class="flex-1 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-md hover:bg-indigo-200 transition">
+                        Review Again
+                    </button>
+                    <button id="return-to-decks" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition">
+                        Back to Decks
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize the application with sample data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize localStorage if not already done
+            if (!localStorage.getItem('flashcards_data')) {
+                // Sample initial data
+                const initialData = {
+                    decks: [
+                        {
+                            id: 'deck-1',
+                            name: 'Mathematics',
+                            description: 'Basic math concepts and formulas',
+                            colorTheme: 'purple-indigo',
+                            icon: 'fa-graduation-cap',
+                            lastStudied: new Date(Date.now() - 2*24*60*60*1000).toISOString(),
+                            cards: [
+                                {
+                                    id: 'card-1',
+                                    front: 'What is the Pythagorean theorem?',
+                                    back: 'In a right triangle, the square of the length of the hypotenuse equals the sum of the squares of the lengths of the other two sides.',
+                                    known: true
+                                },
+                                {
+                                    id: 'card-2',
+                                    front: 'What is the formula for the area of a circle?',
+                                    back: 'A = πr²',
+                                    known: true
+                                },
+                                {
+                                    id: 'card-3',
+                                    front: 'What is the derivative of x^n?',
+                                    back: 'n*x^(n-1)',
+                                    known: false
+                                }
+                            ]
+                        },
+                        {
+                            id: 'deck-2',
+                            name: 'Chemistry',
+                            description: 'Elements and compounds',
+                            colorTheme: 'blue-teal',
+                            icon: 'fa-flask',
+                            lastStudied: new Date(Date.now() - 1*24*60*60*1000).toISOString(),
+                            cards: [
+                                {
+                                    id: 'card-4',
+                                    front: 'What is the chemical symbol for gold?',
+                                    back: 'Au',
+                                    known: true
+                                },
+                                {
+                                    id: 'card-5',
+                                    front: 'What is the pH value of a neutral solution?',
+                                    back: '7',
+                                    known: false
+                                }
+                            ]
+                        },
+                        {
+                            id: 'deck-3',
+                            name: 'Spanish',
+                            description: 'Basic Spanish vocabulary',
+                            colorTheme: 'pink-red',
+                            icon: 'fa-language',
+                            lastStudied: new Date().toISOString(),
+                            cards: [
+                                {
+                                    id: 'card-6',
+                                    front: 'How do you say "hello" in Spanish?',
+                                    back: 'Hola',
+                                    known: true
+                                },
+                                {
+                                    id: 'card-7',
+                                    front: 'How do you say "thank you" in Spanish?',
+                                    back: 'Gracias',
+                                    known: true
+                                },
+                                {
+                                    id: 'card-8',
+                                    front: 'How do you say "goodbye" in Spanish?',
+                                    back: 'Adiós',
+                                    known: true
+                                }
+                            ]
+                        }
+                    ]
+                };
+                localStorage.setItem('flashcards_data', JSON.stringify(initialData));
+            }
+            
+            // Initialize application state
+            initializeApp();
+            loadDecks();
+            setupEventListeners();
+            
+            // Show landing page on start
+            showSection('landing-page');
+        });
+        
+        // Application state
+        let currentDeckId = null;
+        let currentCardIndex = 0;
+        let currentCards = [];
+        let editingDeckId = null;
+        let editingCardId = null;
+            
+        // Initialize the application
+        function initializeApp() {
+            // Add 'active' class to each section to enable transitions
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('active');
+            });
+        }
+            
+        // Load decks from localStorage and display them
+        function loadDecks() {
+            const data = JSON.parse(localStorage.getItem('flashcards_data'));
+            const decksContainer = document.getElementById('decks-container');
+            
+            // Clear existing decks
+            decksContainer.innerHTML = '';
+            
+            // Add each deck to the container
+            data.decks.forEach(deck => {
+                const knownCards = deck.cards.filter(card => card.known).length;
+                const totalCards = deck.cards.length;
+                const progressPercentage = totalCards > 0 ? Math.round((knownCards / totalCards) * 100) : 0;
+                
+                const lastStudiedDate = new Date(deck.lastStudied);
+                const today = new Date();
+                const diffTime = Math.abs(today - lastStudiedDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                let lastStudiedText = 'Never';
+                
+                if (diffDays === 0) {
+                    lastStudiedText = 'today';
+                } else if (diffDays === 1) {
+                    lastStudiedText = 'yesterday';
+                } else {
+                    lastStudiedText = diffDays + 'd ago';
+                }
+                
+                const deckElement = document.createElement('div');
+                deckElement.className = 'deck-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300';
+                deckElement.innerHTML = `
+                    <div class="bg-gradient-to-r from-${getColorClass(deck.colorTheme)} h-24 flex items-center justify-center">
+                        <i class="fas ${deck.icon} text-white text-4xl"></i>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-semibold text-lg text-gray-800">${deck.name}</h3>
+                        <div class="flex items-center mt-2 text-sm text-gray-600">
+                            <span><i class="fas fa-layer-group mr-1"></i> ${totalCards} cards</span>
+                            <span class="mx-3">|</span>
+                            <span><i class="fas fa-clock mr-1"></i> Last studied ${lastStudiedText}</span>
+                        </div>
+                        <div class="mt-3">
+                            <div class="text-sm text-gray-600 mb-1 flex justify-between">
+                                <span>Progress</span>
+                                <span>${progressPercentage}%</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 h-2 w-full">
+                                <div class="progress-value" style="width: ${progressPercentage}%"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex space-x-2">
+                            <button data-deck-id="${deck.id}" class="study-deck-btn flex-1 bg-indigo-600 text-white py-2 px-3 rounded text-sm hover:bg-indigo-700 transition">Study</button>
+                            <button data-deck-id="${deck.id}" class="edit-deck-btn w-10 bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                decksContainer.appendChild(deckElement);
+            });
+            
+            // Add event listeners to the newly created deck cards
+            document.querySelectorAll('.study-deck-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const deckId = button.dataset.deckId;
+                    openDeckForStudy(deckId);
+                });
+            });
+            
+            document.querySelectorAll('.edit-deck-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const deckId = button.dataset.deckId;
+                    showDeckOptions(deckId, button);
+                });
+            });
+        }
+        
+        // Helper function to get color class from color theme
+        function getColorClass(colorTheme) {
+            switch(colorTheme) {
+                case 'purple-indigo': return 'purple-500 to-indigo-600';
+                case 'blue-teal': return 'blue-500 to-teal-400';
+                case 'pink-red': return 'pink-500 to-red-500';
+                case 'yellow-orange': return 'yellow-400 to-orange-500';
+                case 'green-teal': return 'green-400 to-teal-500';
+                default: return 'purple-500 to-indigo-600';
+            }
+        }
+        
+        // Open a deck for studying
+        function openDeckForStudy(deckId) {
+            const data = JSON.parse(localStorage.getItem('flashcards_data'));
+            const deck = data.decks.find(d => d.id === deckId);
+            
+            if (deck) {
+                // Update last studied timestamp
+                deck.lastStudied = new Date().toISOString();
+                localStorage.setItem('flashcards_data', JSON.stringify(data));
+                
+                // Set current deck and cards
+                currentDeckId = deckId;
+                currentCards = [...deck.cards]; // Create a copy of the cards array
+                currentCardIndex = 0;
+                
+                // Update deck information in the study view
+                document.getElementById('study-deck-title').textContent = deck.name;
+                document.getElementById('cards-count').textContent = deck.cards.length;
+                
+                const knownCards = deck.cards.filter(card => card.known).length;
+                document.getElementById('mastered-count').textContent = knownCards;
+                
+                const progressPercentage = deck.cards.length > 0 ? Math.round((knownCards / deck.cards.length) * 100) : 0;
+                document.getElementById('progress-percentage').textContent = progressPercentage + '%';
+                document.getElementById('progress-bar-value').style.width = progressPercentage + '%';
+                
+                // Load the first card if cards exist
+                if (currentCards.length > 0) {
+                    loadCard(currentCardIndex);
+                } else {
+                    // Show empty state
+                    document.getElementById('current-flashcard').innerHTML = `
+                        <div class="flashcard-front bg-white p-8">
+                            <div class="flex flex-col items-center justify-center h-full">
+                                <i class="fas fa-layer-group text-gray-300 text-4xl mb-4"></i>
+                                <p class="text-xl text-gray-500 text-center">No cards in this deck yet</p>
+                                <p class="text-gray-400 text-center mt-2">Click "Add Card" to create your first flashcard</p>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('know-btn').disabled = true;
+                    document.getElementById('dont-know-btn').disabled = true;
+                    document.getElementById('prev-card').disabled = true;
+                    document.getElementById('next-card').disabled = true;
+                    document.getElementById('card-counter').textContent = 'No cards';
+                }
+                
+                // Show the study view
+                showSection('study-view');
+            }
+        }
+        
+        // Load a specific card into the study view
+        function loadCard(index) {
+            if (index >= 0 && index < currentCards.length) {
+                const card = currentCards[index];
+                
+                // Update card content
+                document.getElementById('card-front-content').textContent = card.front;
+                document.getElementById('card-back-content').textContent = card.back;
+                
+                // Reset card flip state
+                const flashcardElement = document.getElementById('current-flashcard');
+                flashcardElement.classList.remove('flipped');
+                
+                // Update card counter
+                document.getElementById('card-counter').textContent = `Card ${index + 1} of ${currentCards.length}`;
+                
+                // Update button states
+                document.getElementById('prev-card').disabled = index === 0;
+                document.getElementById('next-card').disabled = index === currentCards.length - 1;
+                document.getElementById('know-btn').disabled = false;
+                document.getElementById('dont-know-btn').disabled = false;
+            }
+        }
+        
+        // Show a specific section and hide others
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+                section.classList.remove('active');
+            });
+            
+            const targetSection = document.getElementById(sectionId);
+            targetSection.classList.remove('hidden');
+            
+            // Trigger reflow for CSS transition to work properly
+            void targetSection.offsetWidth;
+            
+            targetSection.classList.add('active');
+        }
+        
+        // Show options dropdown for a deck
+        function showDeckOptions(deckId, buttonElement) {
+            // Create a dropdown menu
+            const dropdown = document.createElement('div');
+            dropdown.className = 'absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10';
+            dropdown.innerHTML = `
+                <div class="py-1">
+                    <button data-action="edit" data-deck-id="${deckId}" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <i class="fas fa-edit mr-2"></i> Edit Deck
+                    </button>
+                    <button data-action="delete" data-deck-id="${deckId}" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                        <i class="fas fa-trash-alt mr-2"></i> Delete Deck
+                    </button>
+                </div>
+            `;
+            
+            // Position and show the dropdown
+            const rect = buttonElement.getBoundingClientRect();
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = `${rect.bottom}px`;
+            dropdown.style.right = `${window.innerWidth - rect.right}px`;
+            document.body.appendChild(dropdown);
+            
+            // Add animation
+            setTimeout(() => {
+                dropdown.classList.add('dropdown', 'show');
+            }, 10);
+            
+            // Add event listeners to the dropdown options
+            dropdown.querySelector('[data-action="edit"]').addEventListener('click', () => {
+                openEditDeckModal(deckId);
+                document.body.removeChild(dropdown);
+            });
+            
+            dropdown.querySelector('[data-action="delete"]').addEventListener('click', () => {
+                openDeleteDeckConfirmation(deckId);
+                document.body.removeChild(dropdown);
+            });
+            
+            // Close the dropdown when clicking outside
+            const closeDropdown = (e) => {
+                if (!dropdown.contains(e.target) && e.target !== buttonElement) {
+                    document.body.removeChild(dropdown);
+                    document.removeEventListener('click', closeDropdown);
+                }
+            };
+            
+            // Delay adding the click event to prevent immediate closing
+            setTimeout(() => {
+                document.addEventListener('click', closeDropdown);
+            }, 100);
+        }
+        
+        // Open the edit deck modal
+        function openEditDeckModal(deckId) {
+            const data = JSON.parse(localStorage.getItem('flashcards_data'));
+            const deck = data.decks.find(d => d.id === deckId);
+            
+            if (deck) {
+                editingDeckId = deckId;
+                document.getElementById('deck-modal-title').textContent = 'Edit Deck';
+                document.getElementById('save-deck-btn').textContent = 'Save Changes';
+                document.getElementById('deck-name').value = deck.name;
+                document.getElementById('deck-description').value = deck.description || '';
+                document.getElementById('deck-color').value = deck.colorTheme;
+                document.getElementById('deck-icon').value = deck.icon;
+                
+                // Select the color and icon visually
+                document.querySelectorAll('.color-option').forEach(option => {
+                    if (option.dataset.color === deck.colorTheme) {
+                        option.classList.add('border-gray-800');
+                    } else {
+                        option.classList.remove('border-gray-800');
+                    }
+                });
+                
+                document.querySelectorAll('.icon-option').forEach(option => {
+                    if (option.dataset.icon === deck.icon) {
+                        option.classList.add('border-gray-800');
+                    } else {
+                        option.classList.remove('border-gray-800');
+                    }
+                });
+                
+                document.getElementById('deck-modal').classList.remove('hidden');
+            }
+        }
+        
+        // Open delete deck confirmation modal
+        function openDeleteDeckConfirmation(deckId) {
+            const data = JSON.parse(localStorage.getItem('flashcards_data'));
+            const deck = data.decks.find(d => d.id === deckId);
+            
+            if (deck) {
+                document.getElementById('confirm-title').textContent = `Delete "${deck.name}"`;
+                document.getElementById('confirm-message').textContent = `Are you sure you want to delete this deck? All ${deck.cards.length} cards will be permanently removed. This action cannot be undone.`;
+                
+                // Set up the confirm action
+                const confirmBtn = document.getElementById('confirm-action');
+                confirmBtn.textContent = 'Delete';
+                confirmBtn.className = 'flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500';
+                
+                // Store the deck ID for the confirmation handler
+                confirmBtn.dataset.deckId = deckId;
+                confirmBtn.dataset.action = 'delete-deck';
+                
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            }
+        }
+        
+        // Create a new deck
+        function createNewDeck() {
+            const name = document.getElementById('deck-name').value.trim();
+            const description = document.getElementById('deck-description').value.trim();
+            const colorTheme = document.getElementById('deck-color').value;
+            const icon = document.getElementById('deck-icon').value;
+            
+            if (name) {
+                const data = JSON.parse(localStorage.getItem('flashcards_data'));
+                
+                if (editingDeckId) {
+                    // Update existing deck
+                    const deckIndex = data.decks.findIndex(d => d.id === editingDeckId);
+                    if (deckIndex !== -1) {
+                        data.decks[deckIndex].name = name;
+                        data.decks[deckIndex].description = description;
+                        data.decks[deckIndex].colorTheme = colorTheme;
+                        data.decks[deckIndex].icon = icon;
+                    }
+                } else {
+                    // Create new deck
+                    const newDeck = {
+                        id: 'deck-' + Date.now(),
+                        name: name,
+                        description: description,
+                        colorTheme: colorTheme,
+                        icon: icon,
+                        lastStudied: new Date().toISOString(),
+                        cards: []
+                    };
+                    
+                    data.decks.push(newDeck);
+                }
+                
+                // Save to localStorage and update the UI
+                localStorage.setItem('flashcards_data', JSON.stringify(data));
+                loadDecks();
+                
+                // Show success message
+                showToast(editingDeckId ? 'Deck updated successfully!' : 'New deck created!');
+                
+                // Close the modal and reset the form
+                closeDeckModal();
+            } else {
+                alert('Please enter a deck name');
+            }
+        }
+        
+        // Create a new flashcard
+        function createNewCard() {
+            const front = document.getElementById('card-front').value.trim();
+            const back = document.getElementById('card-back').value.trim();
+            
+            if (front && back) {
+                const data = JSON.parse(localStorage.getItem('flashcards_data'));
+                const deckIndex = data.decks.findIndex(d => d.id === currentDeckId);
+                
+                if (deckIndex !== -1) {
+                    if (editingCardId) {
+                        // Update existing card
+                        const cardIndex = data.decks[deckIndex].cards.findIndex(c => c.id === editingCardId);
+                        if (cardIndex !== -1) {
+                            data.decks[deckIndex].cards[cardIndex].front = front;
+                            data.decks[deckIndex].cards[cardIndex].back = back;
+                        }
+                    } else {
+                        // Create new card
+                        const newCard = {
+                            id: 'card-' + Date.now(),
+                            front: front,
+                            back: back,
+                            known: false
+                        };
+                        
+                        data.decks[deckIndex].cards.push(newCard);
+                        
+                        // Also add to the current cards array
+                        currentCards.push(newCard);
+                    }
+                    
+                    // Save to localStorage
+                    localStorage.setItem('flashcards_data', JSON.stringify(data));
+                    
+                    // If we were creating a new card, go to the new card
+                    if (!editingCardId && currentCards.length > 0) {
+                        currentCardIndex = currentCards.length - 1;
+                        loadCard(currentCardIndex);
+                    }
+                    
+                    // Update card count and progress in the study view
+                    const totalCards = data.decks[deckIndex].cards.length;
+                    const knownCards = data.decks[deckIndex].cards.filter(card => card.known).length;
+                    const progressPercentage = totalCards > 0 ? Math.round((knownCards / totalCards) * 100) : 0;
+                    
+                    document.getElementById('cards-count').textContent = totalCards;
+                    document.getElementById('mastered-count').textContent = knownCards;
+                    document.getElementById('progress-percentage').textContent = progressPercentage + '%';
+                    document.getElementById('progress-bar-value').style.width = progressPercentage + '%';
+                    
+                    // Show success message
+                    showToast(editingCardId ? 'Card updated successfully!' : 'New card added!');
+                    
+                    // Enable buttons if this is the first card
+                    if (totalCards === 1) {
+                        document.getElementById('know-btn').disabled = false;
+                        document.getElementById('dont-know-btn').disabled = false;
+                        document.getElementById('card-counter').textContent = 'Card 1 of 1';
+                    }
+                }
+                
+                // Close the modal and reset the form
+                closeCardModal();
+            } else {
+                alert('Please fill in both the question and answer fields');
+            }
+        }
+        
+        // Mark card as known/unknown
+        function markCard(known) {
+            if (currentCardIndex >= 0 && currentCardIndex < currentCards.length) {
+                const data = JSON.parse(localStorage.getItem('flashcards_data'));
+                const deckIndex = data.decks.findIndex(d => d.id === currentDeckId);
+                
+                if (deckIndex !== -1) {
+                    // Find the current card in the deck
+                    const cardId = currentCards[currentCardIndex].id;
+                    const cardIndex = data.decks[deckIndex].cards.findIndex(c => c.id === cardId);
+                    
+                    if (cardIndex !== -1) {
+                        // Update the card's known status
+                        data.decks[deckIndex].cards[cardIndex].known = known;
+                        currentCards[currentCardIndex].known = known;
+                        
+                        // Save to localStorage
+                        localStorage.setItem('flashcards_data', JSON.stringify(data));
+                        
+                        // Update progress display
+                        const totalCards = data.decks[deckIndex].cards.length;
+                        const knownCards = data.decks[deckIndex].cards.filter(card => card.known).length;
+                        const progressPercentage = totalCards > 0 ? Math.round((knownCards / totalCards) * 100) : 0;
+                        
+                        document.getElementById('mastered-count').textContent = knownCards;
+                        document.getElementById('progress-percentage').textContent = progressPercentage + '%';
+                        document.getElementById('progress-bar-value').style.width = progressPercentage + '%';
+                        
+                        // Move to the next card or show completion screen
+                        if (currentCardIndex < currentCards.length - 1) {
+                            currentCardIndex++;
+                            loadCard(currentCardIndex);
+                        } else {
+                            // Show completion screen
+                            showCompletionScreen(totalCards, knownCards);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Show completion screen
+        function showCompletionScreen(totalCards, knownCards) {
+            document.getElementById('cards-reviewed').textContent = totalCards;
+            document.getElementById('cards-mastered').textContent = knownCards;
+            document.getElementById('cards-to-review').textContent = totalCards - knownCards;
+            
+            document.getElementById('complete-modal').classList.remove('hidden');
+        }
+        
+        // Delete a deck
+        function deleteDeck(deckId) {
+            const data = JSON.parse(localStorage.getItem('flashcards_data'));
+            const deckIndex = data.decks.findIndex(d => d.id === deckId);
+            
+            if (deckIndex !== -1) {
+                // Remove the deck
+                data.decks.splice(deckIndex, 1);
+                
+                // Save to localStorage
+                localStorage.setItem('flashcards_data', JSON.stringify(data));
+                
+                // Update the UI
+                loadDecks();
+                
+                // Show success message
+                showToast('Deck deleted successfully');
+                
+                // If we're in the study view and deleted the current deck, go back to the dashboard
+                if (currentDeckId === deckId) {
+                    showSection('dashboard');
+                }
+            }
+        }
+        
+        // Show toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Close deck modal
+        function closeDeckModal() {
+            document.getElementById('deck-modal').classList.add('hidden');
+            document.getElementById('deck-form').reset();
+            editingDeckId = null;
+        }
+        
+        // Close card modal
+        function closeCardModal() {
+            document.getElementById('card-modal').classList.add('hidden');
+            document.getElementById('card-form').reset();
+            editingCardId = null;
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            // Landing page
+            document.getElementById('get-started-btn').addEventListener('click', () => {
+                showSection('dashboard');
+            });
+            
+            // Dashboard
+            document.getElementById('create-deck-btn').addEventListener('click', () => {
+                document.getElementById('deck-modal-title').textContent = 'Create New Deck';
+                document.getElementById('save-deck-btn').textContent = 'Create Deck';
+                editingDeckId = null;
+                document.getElementById('deck-modal').classList.remove('hidden');
+            });
+            
+            // Deck modal
+            document.getElementById('deck-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                createNewDeck();
+            });
+            
+            document.getElementById('close-deck-modal').addEventListener('click', closeDeckModal);
+            document.getElementById('cancel-deck-btn').addEventListener('click', closeDeckModal);
+            
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.classList.remove('border-gray-800');
+                    });
+                    option.classList.add('border-gray-800');
+                    document.getElementById('deck-color').value = option.dataset.color;
+                });
+            });
+            
+            document.querySelectorAll('.icon-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.icon-option').forEach(opt => {
+                        opt.classList.remove('border-gray-800');
+                    });
+                    option.classList.add('border-gray-800');
+                    document.getElementById('deck-icon').value = option.dataset.icon;
+                });
+            });
+            
+            // Study view
+            document.getElementById('back-to-decks').addEventListener('click', () => {
+                showSection('dashboard');
+            });
+            
+            document.getElementById('add-card-btn').addEventListener('click', () => {
+                document.getElementById('card-modal-title').textContent = 'Add New Flashcard';
+                document.getElementById('save-card-btn').textContent = 'Add Card';
+                editingCardId = null;
+                document.getElementById('card-modal').classList.remove('hidden');
+            });
+            
+            document.getElementById('study-options-btn').addEventListener('click', () => {
+                const dropdown = document.getElementById('study-options-dropdown');
+                dropdown.classList.toggle('show');
+            });
+            
+            document.getElementById('shuffle-cards').addEventListener('click', () => {
+                // Shuffle the current cards
+                for (let i = currentCards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentCards[i], currentCards[j]] = [currentCards[j], currentCards[i]];
+                }
+                
+                // Reset to the first card
+                currentCardIndex = 0;
+                loadCard(currentCardIndex);
+                
+                // Hide dropdown
+                document.getElementById('study-options-dropdown').classList.remove('show');
+                showToast('Cards shuffled');
+            });
+            
+            document.getElementById('reset-progress').addEventListener('click', () => {
+                const data = JSON.parse(localStorage.getItem('flashcards_data'));
+                const deckIndex = data.decks.findIndex(d => d.id === currentDeckId);
+                
+                if (deckIndex !== -1) {
+                    // Reset each card's known status
+                    data.decks[deckIndex].cards.forEach(card => {
+                        card.known = false;
+                    });
+                    
+                    // Update the current cards
+                    currentCards.forEach(card => {
+                        card.known = false;
+                    });
+                    
+                    // Save to localStorage
+                    localStorage.setItem('flashcards_data', JSON.stringify(data));
+                    
+                    // Update progress display
+                    document.getElementById('mastered-count').textContent = '0';
+                    document.getElementById('progress-percentage').textContent = '0%';
+                    document.getElementById('progress-bar-value').style.width = '0%';
+                    
+                    // Hide dropdown
+                    document.getElementById('study-options-dropdown').classList.remove('show');
+                    showToast('Progress reset');
+                }
+            });
+            
+            document.getElementById('edit-deck-btn').addEventListener('click', () => {
+                openEditDeckModal(currentDeckId);
+                document.getElementById('study-options-dropdown').classList.remove('show');
+            });
+            
+            document.getElementById('delete-deck-btn').addEventListener('click', () => {
+                openDeleteDeckConfirmation(currentDeckId);
+                document.getElementById('study-options-dropdown').classList.remove('show');
+            });
+            
+            // Card interaction
+            document.getElementById('current-flashcard').addEventListener('click', () => {
+                document.getElementById('current-flashcard').classList.toggle('flipped');
+            });
+            
+            document.getElementById('know-btn').addEventListener('click', () => {
+                markCard(true);
+            });
+            
+            document.getElementById('dont-know-btn').addEventListener('click', () => {
+                markCard(false);
+            });
+            
+            document.getElementById('prev-card').addEventListener('click', () => {
+                if (currentCardIndex > 0) {
+                    currentCardIndex--;
+                    loadCard(currentCardIndex);
+                }
+            });
+            
+            document.getElementById('next-card').addEventListener('click', () => {
+                if (currentCardIndex < currentCards.length - 1) {
+                    currentCardIndex++;
+                    loadCard(currentCardIndex);
+                }
+            });
+            
+            // Card modal
+            document.getElementById('card-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                createNewCard();
+            });
+            
+            document.getElementById('close-card-modal').addEventListener('click', closeCardModal);
+            document.getElementById('cancel-card-btn').addEventListener('click', closeCardModal);
+            
+            // Confirmation modal
+            document.getElementById('confirm-cancel').addEventListener('click', () => {
+                document.getElementById('confirm-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('confirm-action').addEventListener('click', () => {
+                const action = document.getElementById('confirm-action').dataset.action;
+                
+                if (action === 'delete-deck') {
+                    const deckId = document.getElementById('confirm-action').dataset.deckId;
+                    deleteDeck(deckId);
+                }
+                
+                document.getElementById('confirm-modal').classList.add('hidden');
+            });
+            
+            // Completion modal
+            document.getElementById('review-again').addEventListener('click', () => {
+                // Reset to first card
+                currentCardIndex = 0;
+                loadCard(currentCardIndex);
+                document.getElementById('complete-modal').classList.add('hidden');
+            });
+            
+            document.getElementById('return-to-decks').addEventListener('click', () => {
+                document.getElementById('complete-modal').classList.add('hidden');
+                showSection('dashboard');
+            });
+            
+            // Add click outside logic for dropdowns
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('study-options-dropdown');
+                const optionsBtn = document.getElementById('study-options-btn');
+                
+                if (dropdown.classList.contains('show') && 
+                    !dropdown.contains(e.target) && 
+                    !optionsBtn.contains(e.target)) {
+                    dropdown.classList.remove('show');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
