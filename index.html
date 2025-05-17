@@ -588,9 +588,17 @@
                     <i class="fas fa-chevron-left mr-1"></i> Previous
                 </button>
                 <span id="card-counter" class="text-sm text-gray-600">Card 1 of 25</span>
-                <button id="next-card" class="text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
-                    Next <i class="fas fa-chevron-right ml-1"></i>
-                </button>
+                <div class="flex items-center">
+                    <button id="delete-card" class="text-red-500 hover:text-red-700 mr-4 transition">
+                        <i class="fas fa-trash-alt mr-1"></i> Delete
+                    </button>
+                    <button id="edit-card" class="text-indigo-600 hover:text-indigo-800 mr-4 transition">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </button>
+                    <button id="next-card" class="text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        Next <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -932,6 +940,8 @@
                     document.getElementById('prev-card').disabled = true;
                     document.getElementById('next-card').disabled = true;
                     document.getElementById('card-counter').textContent = 'No cards';
+                    document.getElementById('delete-card').disabled = true;
+                    document.getElementById('edit-card').disabled = true;
                 }
                 
                 // Show the study view
@@ -960,6 +970,8 @@
                 document.getElementById('next-card').disabled = index === currentCards.length - 1;
                 document.getElementById('know-btn').disabled = false;
                 document.getElementById('dont-know-btn').disabled = false;
+                document.getElementById('delete-card').disabled = false;
+                document.getElementById('edit-card').disabled = false;
             }
         }
         
@@ -1089,6 +1101,27 @@
             }
         }
         
+        // Open delete card confirmation modal
+        function openDeleteCardConfirmation() {
+            if (currentCardIndex >= 0 && currentCardIndex < currentCards.length) {
+                const card = currentCards[currentCardIndex];
+                
+                document.getElementById('confirm-title').textContent = 'Delete Card';
+                document.getElementById('confirm-message').textContent = 'Are you sure you want to delete this flashcard? This action cannot be undone.';
+                
+                // Set up the confirm action
+                const confirmBtn = document.getElementById('confirm-action');
+                confirmBtn.textContent = 'Delete';
+                confirmBtn.className = 'flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500';
+                
+                // Store the card ID for the confirmation handler
+                confirmBtn.dataset.cardId = card.id;
+                confirmBtn.dataset.action = 'delete-card';
+                
+                document.getElementById('confirm-modal').classList.remove('hidden');
+            }
+        }
+        
         // Create a new deck
         function createNewDeck() {
             const name = document.getElementById('deck-name').value.trim();
@@ -1196,6 +1229,8 @@
                         document.getElementById('know-btn').disabled = false;
                         document.getElementById('dont-know-btn').disabled = false;
                         document.getElementById('card-counter').textContent = 'Card 1 of 1';
+                        document.getElementById('delete-card').disabled = false;
+                        document.getElementById('edit-card').disabled = false;
                     }
                 }
                 
@@ -1278,6 +1313,86 @@
                 if (currentDeckId === deckId) {
                     showSection('dashboard');
                 }
+            }
+        }
+        
+        // Delete current card
+        function deleteCard() {
+            if (currentCardIndex >= 0 && currentCardIndex < currentCards.length) {
+                const data = JSON.parse(localStorage.getItem('flashcards_data'));
+                const deckIndex = data.decks.findIndex(d => d.id === currentDeckId);
+                
+                if (deckIndex !== -1) {
+                    // Find the current card in the deck
+                    const cardId = currentCards[currentCardIndex].id;
+                    const cardIndex = data.decks[deckIndex].cards.findIndex(c => c.id === cardId);
+                    
+                    if (cardIndex !== -1) {
+                        // Remove the card
+                        data.decks[deckIndex].cards.splice(cardIndex, 1);
+                        currentCards.splice(currentCardIndex, 1);
+                        
+                        // Save to localStorage
+                        localStorage.setItem('flashcards_data', JSON.stringify(data));
+                        
+                        // Update card count and progress in the study view
+                        const totalCards = data.decks[deckIndex].cards.length;
+                        const knownCards = data.decks[deckIndex].cards.filter(card => card.known).length;
+                        const progressPercentage = totalCards > 0 ? Math.round((knownCards / totalCards) * 100) : 0;
+                        
+                        document.getElementById('cards-count').textContent = totalCards;
+                        document.getElementById('mastered-count').textContent = knownCards;
+                        document.getElementById('progress-percentage').textContent = progressPercentage + '%';
+                        document.getElementById('progress-bar-value').style.width = progressPercentage + '%';
+                        
+                        // Show success message
+                        showToast('Card deleted successfully');
+                        
+                        // Handle empty deck case
+                        if (totalCards === 0) {
+                            document.getElementById('current-flashcard').innerHTML = `
+                                <div class="flashcard-front bg-white p-8">
+                                    <div class="flex flex-col items-center justify-center h-full">
+                                        <i class="fas fa-layer-group text-gray-300 text-4xl mb-4"></i>
+                                        <p class="text-xl text-gray-500 text-center">No cards in this deck yet</p>
+                                        <p class="text-gray-400 text-center mt-2">Click "Add Card" to create your first flashcard</p>
+                                    </div>
+                                </div>
+                            `;
+                            document.getElementById('know-btn').disabled = true;
+                            document.getElementById('dont-know-btn').disabled = true;
+                            document.getElementById('prev-card').disabled = true;
+                            document.getElementById('next-card').disabled = true;
+                            document.getElementById('card-counter').textContent = 'No cards';
+                            document.getElementById('delete-card').disabled = true;
+                            document.getElementById('edit-card').disabled = true;
+                            return;
+                        }
+                        
+                        // Adjust currentCardIndex if necessary
+                        if (currentCardIndex >= totalCards) {
+                            currentCardIndex = totalCards - 1;
+                        }
+                        
+                        // Load the new current card
+                        loadCard(currentCardIndex);
+                    }
+                }
+            }
+        }
+        
+        // Open the edit card modal
+        function openEditCardModal() {
+            if (currentCardIndex >= 0 && currentCardIndex < currentCards.length) {
+                const card = currentCards[currentCardIndex];
+                editingCardId = card.id;
+                
+                document.getElementById('card-modal-title').textContent = 'Edit Flashcard';
+                document.getElementById('save-card-btn').textContent = 'Save Changes';
+                document.getElementById('card-front').value = card.front;
+                document.getElementById('card-back').value = card.back;
+                
+                document.getElementById('card-modal').classList.remove('hidden');
             }
         }
         
@@ -1451,6 +1566,15 @@
                 }
             });
             
+            // Delete and edit card buttons
+            document.getElementById('delete-card').addEventListener('click', () => {
+                openDeleteCardConfirmation();
+            });
+            
+            document.getElementById('edit-card').addEventListener('click', () => {
+                openEditCardModal();
+            });
+            
             // Card modal
             document.getElementById('card-form').addEventListener('submit', (e) => {
                 e.preventDefault();
@@ -1471,6 +1595,8 @@
                 if (action === 'delete-deck') {
                     const deckId = document.getElementById('confirm-action').dataset.deckId;
                     deleteDeck(deckId);
+                } else if (action === 'delete-card') {
+                    deleteCard();
                 }
                 
                 document.getElementById('confirm-modal').classList.add('hidden');
